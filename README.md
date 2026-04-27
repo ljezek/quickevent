@@ -165,7 +165,7 @@ ln -s /tmp/qe3/bin/translations translations
 ```
 
 ### Windows Build
-See the [README_WINDOWS.md](README_WINDOWS.md) for detailed guide how to get the working running on Windows.
+See the [README_WINDOWS.md](README_WINDOWS.md) for detailed guide how to get the build working on Windows.
 
 ---
 <!-- CONTRIBUTING -->

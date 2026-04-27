@@ -2,6 +2,8 @@
 
 This guide covers building QuickEvent on Windows (including Windows ARM). The build targets x86_64 using MinGW, which runs natively on x64 and via emulation on Windows ARM.
 
+It is heavily inspired by the `.github\workflows\installer.yml` GitHub workflow.
+
 ---
 
 ## Tools to Install
@@ -39,7 +41,8 @@ Set `$QT_ROOT` to your Qt install folder. Everything else is derived from it:
 ```powershell
 $QT_ROOT = "C:\dev\Qtx86"   # adjust to your actual Qt install root
 $QT_VER  = "6.10.3"         # adjust to the installed Qt version
-$MINGW_VER = "mingw1310_64"
+$MINGW_VER = "mingw1310_64" # adjust to the installed Qt version
+$QUICKBOX_ROOT = $PWD       # adjust to the quickbox repo root if necessary
 ```
 
 One-time PATH setup (restart PowerShell after running this):
@@ -56,19 +59,19 @@ $env:CC  = "$QT_ROOT\Tools\$MINGW_VER\bin\gcc.exe"
 $env:CXX = "$QT_ROOT\Tools\$MINGW_VER\bin\g++.exe"
 
 cmake `
-  -S "C:\repos\quickbox" `
-  -B "C:\repos\quickbox\build" `
+  -S "$QUICKBOX_ROOT" `
+  -B "$QUICKBOX_ROOT\build" `
   -G "MinGW Makefiles" `
   -DCMAKE_BUILD_TYPE=Release `
   "-DCMAKE_PREFIX_PATH=$QT_ROOT\$QT_VER\mingw_64" `
-  -DCMAKE_INSTALL_PREFIX="C:\repos\quickbox\install" `
+  -DCMAKE_INSTALL_PREFIX="$QUICKBOX_ROOT\install" `
   -DUSE_QT6=ON `
   -DMINGW=ON `
   -DQF_BUILD_QML_PLUGINS=ON `
   -DBUILD_TESTING=OFF
 
-cmake --build "C:\repos\quickbox\build" --parallel
-cmake --install "C:\repos\quickbox\build"
+cmake --build "$QUICKBOX_ROOT\build" --parallel
+cmake --install "$QUICKBOX_ROOT\build"
 ```
 
 ---
@@ -85,26 +88,26 @@ $SSL_DIR = "C:\Program Files\OpenSSL"            # Update this
 # Deploy Qt DLLs and plugins
 & "$QT_ROOT\$QT_VER\mingw_64\bin\windeployqt.exe" `
   -serialport -multimedia `
-  --qmldir "C:\repos\quickbox\install\bin\qml" `
-  --qmldir "C:\repos\quickbox\install\bin\reports" `
-  "C:\repos\quickbox\install\bin\quickevent.exe"
+  --qmldir "$QUICKBOX_ROOT\install\bin\qml" `
+  --qmldir "$QUICKBOX_ROOT\install\bin\reports" `
+  "$QUICKBOX_ROOT\install\bin\quickevent.exe"
 
 # Copy MinGW runtime DLLs
 Copy-Item `
   "$QT_ROOT\Tools\$MINGW_VER\bin\libstdc++-6.dll", `
   "$QT_ROOT\Tools\$MINGW_VER\bin\libgcc_s_seh-1.dll", `
   "$QT_ROOT\Tools\$MINGW_VER\bin\libwinpthread-1.dll" `
-  "C:\repos\quickbox\install\bin\"
+  "$QUICKBOX_ROOT\install\bin\"
 
 # Copy PostgreSQL runtime DLLs
 Copy-Item `
   "$PG_BIN\libiconv-2.dll", "$PG_BIN\libintl-9.dll", `
   "$PG_BIN\liblz4.dll", "$PG_BIN\zlib1.dll", "$PG_BIN\libpq.dll" `
-  "C:\repos\quickbox\install\bin\"
+  "$QUICKBOX_ROOT\install\bin\"
 
 # Copy OpenSSL runtime DLLs (path may vary by OpenSSL install)
 Copy-Item "$SSL_DIR\libssl-3-x64.dll", "$SSL_DIR\libcrypto-3-x64.dll" `
-  "C:\repos\quickbox\install\bin\"
+  "$QUICKBOX_ROOT\install\bin\"
 ```
 
 ---
@@ -117,8 +120,6 @@ Run `install\bin\quickevent.exe` — it should launch without any missing DLL er
 
 ## Notes on Windows ARM
 
-The project has no native ARM64 build support. Building x86_64 with MinGW and running via Windows ARM's built-in x64 emulation is the recommended approach and mirrors the CI configuration exactly.
+Quickbox currently has no native ARM64 build support. Building x86_64 with MinGW and running via Windows ARM's built-in x64 emulation is the recommended approach and mirrors the CI configuration exactly.
 
 **Critical**: An x86_64 emulated process cannot load ARM64 DLLs. On Windows ARM, `winget` may install ARM64-native versions of PostgreSQL and OpenSSL. Use Chocolatey or download explicit x86-64 installers as described above — otherwise the app will fail to start with missing or incompatible DLL errors.
-
-If ARM64 native support is ever needed, it would require Qt `win64_msvc2022_arm64` and the MSVC ARM64 toolchain — this is currently untested with the project.
