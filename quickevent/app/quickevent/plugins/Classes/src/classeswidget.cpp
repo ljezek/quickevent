@@ -6,6 +6,8 @@
 #include "editcodeswidget.h"
 #include "editcourseswidget.h"
 #include "drawing/drawingganttwidget.h"
+#include "drawing/autodrawengine.h"
+#include "drawing/autodrawdialog.h"
 
 #include <plugins/Classes/src/courseitemdelegate.h>
 #include <plugins/Event/src/eventplugin.h>
@@ -195,6 +197,12 @@ void ClassesWidget::settleDownInPartWidget(::PartWidget *part_widget)
 		connect(a, &QAction::triggered, this, &ClassesWidget::edit_classes_layout);
 		a_edit->addActionInto(a);
 	}
+	{
+		auto *a = new qfw::Action(tr("&Auto draw classes layout"));
+		a->setShortcut(tr("Ctrl+Shift+L"));
+		connect(a, &QAction::triggered, this, &ClassesWidget::auto_draw_classes_layout);
+		a_edit->addActionInto(a);
+	}
 
 	qfw::Action *a_import = part_widget->menuBar()->actionForPath("import", true);
 	a_import->setText(tr("&Import"));
@@ -271,6 +279,33 @@ void ClassesWidget::edit_classes_layout()
 	dlg.setCentralWidget(w);
 	w->load(selectedStageId());
 	dlg.exec();
+	reload();
+}
+
+void ClassesWidget::auto_draw_classes_layout()
+{
+	auto *w = new drawing::AutoDrawDialog;
+	qf::gui::dialogs::Dialog dlg(this);
+	dlg.setCentralWidget(w);
+	if(dlg.exec() != QDialog::Accepted)
+		return;
+
+	drawing::AutoDrawConfig cfg = w->config();
+	cfg.saveToSettings();
+
+	drawing::AutoDrawEngine engine(selectedStageId(), cfg);
+	if(!engine.run()) {
+		qfd::MessageBox::showWarning(
+			qfw::framework::MainWindow::frameWork(),
+			tr("No classes with entries found for this stage."));
+		return;
+	}
+
+	auto *gw = new drawing::DrawingGanttWidget;
+	qf::gui::dialogs::Dialog gdlg(this);
+	gdlg.setCentralWidget(gw);
+	gw->load(selectedStageId());
+	gdlg.exec();
 	reload();
 }
 

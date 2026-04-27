@@ -35,6 +35,7 @@ private:
 	void edit_courses();
 	void edit_codes();
 	void edit_classes_layout();
+	void auto_draw_classes_layout();
 
 	void import_ocad_txt();
 	void import_ocad_v8();

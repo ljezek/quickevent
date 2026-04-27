@@ -36,6 +36,10 @@ add_executable(quickevent
 	plugins/Classes/src/drawing/iganttitem.cpp
 	plugins/Classes/src/drawing/startslotheader.cpp
 	plugins/Classes/src/drawing/startslotitem.cpp
+	plugins/Classes/src/drawing/autodrawalgorithm.cpp
+	plugins/Classes/src/drawing/autodrawengine.cpp
+	plugins/Classes/src/drawing/autodrawdialog.cpp
+	plugins/Classes/src/drawing/autodrawdialog.ui
 	plugins/Classes/src/editcodeswidget.cpp
 	plugins/Classes/src/editcodeswidget.ui
 	plugins/Classes/src/editcoursecodeswidget.cpp
@@ -273,6 +277,8 @@ qt6_add_lupdate(quickevent TS_FILES
 target_sources(quickevent PRIVATE ${QM_FILES})
 target_include_directories(quickevent PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_link_libraries(quickevent PUBLIC libquickeventcore libquickeventgui libqfgui libsiut)
+
+add_subdirectory(plugins/Classes/tests)
 
 # Extract version from appversion.h
 file(READ "${CMAKE_CURRENT_SOURCE_DIR}/src/appversion.h" APP_VERSION_H)
