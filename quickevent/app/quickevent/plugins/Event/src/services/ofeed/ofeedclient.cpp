@@ -460,6 +460,8 @@ void OFeedClient::ensureEventImageCachedAtStartup()
 		return;
 	if(!printEventImageOnReceipt())
 		return;
+	if(hasCachedEventImage())
+		return;
 	m_eventImageStartupAttempted = true;
 	refreshEventImageCache();
 }
@@ -1111,6 +1113,8 @@ void OFeedClient::processCompetitorsChanges(QJsonArray data_array)
 		QString type = change["type"].toString();
 		QString previous_value = change["previousValue"].toString();
 		QString new_value = change["newValue"].toString();
+		QString origin = change["origin"].toString();
+		QDateTime created_at = QDateTime::fromString(change["createdAt"].toString(), Qt::ISODate);
 
 		// Retrieve competitor and details
 		auto competitor = change.value("competitor").toObject();
@@ -1118,6 +1122,9 @@ void OFeedClient::processCompetitorsChanges(QJsonArray data_array)
 		QString external_id_str = competitor["externalId"].toString();
 		int runs_id = external_id_str.toInt();
 		qfInfo() << "Processing change for competitorId (OFeed externalId):" << runs_id << ", type:" << type << ", " << previous_value << " -> " << new_value;
+
+		if (origin == QLatin1String("START") && created_at.isValid())
+			processCorridorTimeUpdate(runs_id, created_at);
 
 		// Handle each type of change
 		if (type == "si_card_change")
@@ -1209,6 +1216,31 @@ void OFeedClient::processNoteChange(int runs_id, const QString &new_value)
 		{
 			qfError() << tr("Database query failed: ") << q.lastError().text();
 		}
+	}
+	catch (const std::exception &e)
+	{
+		qCritical() << tr("Exception occurred while executing query: ") << e.what();
+	}
+	catch (...)
+	{
+		qCritical() << tr("Unknown exception occurred while executing query.");
+	}
+}
+
+void OFeedClient::processCorridorTimeUpdate(int runs_id, const QDateTime &created_at)
+{
+	qf::core::sql::Query q;
+	try
+	{
+		q.prepare("UPDATE runs SET corridorTime = :createdAt "
+				  "WHERE id = :runsId "
+				  "AND (corridorTime IS NULL OR corridorTime > :createdAt2)",
+				  qf::core::Exception::Throw);
+		q.bindValue(":runsId", runs_id);
+		q.bindValue(":createdAt", created_at);
+		q.bindValue(":createdAt2", created_at);
+		if (!q.exec(qf::core::Exception::Throw))
+			qfError() << tr("Database query failed: ") << q.lastError().text();
 	}
 	catch (const std::exception &e)
 	{
