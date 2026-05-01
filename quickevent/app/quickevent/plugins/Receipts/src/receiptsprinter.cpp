@@ -50,6 +50,7 @@ bool ReceiptsPrinter::printReceipt(const QString &report_file_name, const QVaria
 	ReceiptsSettings settings;
 	QPrinter *printer = nullptr;
 	QPaintDevice *paint_device = nullptr;
+	qff::MainWindow *fwk = qff::MainWindow::frameWork();
 	if(settings.printerTypeEnum() == ReceiptsSettings::PrinterType::GraphicPrinter) {
 		QF_TIME_SCOPE("init graphics printer");
 		QPrinterInfo pi = QPrinterInfo::printerInfo(settings.graphicsPrinterName());
@@ -72,10 +73,10 @@ bool ReceiptsPrinter::printReceipt(const QString &report_file_name, const QVaria
 				 << ((settings.characterPrinterTypeEnum() == ReceiptsSettings::CharacterPrinteType::Directory)?
 						 settings.characterPrinterDirectory() :
 						 settings.characterPrinterDevice());
-		qff::MainWindow *fwk = qff::MainWindow::frameWork();
 		paint_device = fwk;
 	}
-	qf::gui::reports::ReportProcessor rp(paint_device);
+	// Use screen widget (stable DPI) for layout; QPrinter DPI can change after QPainter::begin() on Windows
+	qf::gui::reports::ReportProcessor rp(fwk);
 	{
 		QF_TIME_SCOPE("setting report and data");
 		auto *plugin = qf::gui::framework::getPlugin<Receipts::ReceiptsPlugin>();
